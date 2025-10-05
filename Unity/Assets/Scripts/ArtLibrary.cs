@@ -1,36 +1,50 @@
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using StampType = StampModel.StampType;
 
-public class ArtLibrary : MonoBehaviour
+[CreateAssetMenu(fileName = "ArtLibrary", menuName = "ScriptableObjects/ArtLibrary", order = 1)]
+public class ArtLibrary : ScriptableObject
 {
-    public static ArtLibrary Instance { get; private set; }
+    [Serializable]
+    private struct Entry
+    {
+        public StampType type;
+        public Sprite sprite;
+    }
     
     [SerializeField] private string folderPath;
+    [SerializeField] private List<Entry> entries = new();
 
-    private Dictionary<StampType, Sprite> Lookup => lookup ??= BuildLookup();
-    private Dictionary<StampType, Sprite> lookup;
+    private Dictionary<StampType, Sprite> Dict => dict ??= entries.ToDictionary(e => e.type, e => e.sprite);
+    private Dictionary<StampType, Sprite> dict;
 
-    private void Awake() => Instance = this;
+    public Sprite Get(StampType stampType) => Dict.GetValueOrDefault(stampType);
 
-    private Dictionary<StampType, Sprite> BuildLookup()
+#if UNITY_EDITOR
+    [ContextMenu("Populate")]
+    private void Populate()
     {
-        var dict = new Dictionary<StampType, Sprite>();
+        entries.Clear();
         var stamps = Enum.GetValues(typeof(StampType)).Cast<StampType>().ToList();
         foreach (var stamp in stamps)
         {
-            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{folderPath}/{stamp}.png");
+            var path = $"{folderPath}/{stamp}.png";
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
             if (sprite)
-                dict[stamp] = sprite;
+                entries.Add(new Entry { type = stamp, sprite = sprite });
             else
-                Debug.LogError($"[IconLibrary] Missing {stamp} at {folderPath}");
+                Debug.LogError($"[ArtLibrary] Missing {stamp} at {path}");
         }
 
-        return dict;
+        dict = null;
+        EditorUtility.SetDirty(this);
+        AssetDatabase.SaveAssets();
+        Debug.Log($"[ArtLibrary] Populated {entries.Count} entries.");
     }
-    
-    public Sprite Get(StampType stampType) => Lookup.GetValueOrDefault(stampType);
+#endif
 }

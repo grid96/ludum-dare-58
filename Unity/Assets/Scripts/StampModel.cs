@@ -1,10 +1,24 @@
 using System;
+using UnityEngine;
 
 public class StampModel
 {
+    public enum Collection
+    {
+        Category,
+        Country,
+        Rarity,
+        Postmark,
+    }
+
     public enum StampType
     {
         MonaLisa,
+    }
+
+    public enum StampSize
+    {
+        Standard,
     }
 
     public enum StampCategory
@@ -27,6 +41,11 @@ public class StampModel
 
     public StampType Type { get; set; }
 
+    public StampSize Size => Type switch
+    {
+        _ => StampSize.Standard,
+    };
+
     public StampCategory Category => Type switch
     {
         StampType.MonaLisa => StampCategory.Painting,
@@ -41,11 +60,23 @@ public class StampModel
 
     public StampRarity Rarity => Type switch
     {
-        StampType.MonaLisa => StampRarity.Legendary,
-        _ => throw new ArgumentOutOfRangeException()
+        // StampType.MonaLisa => StampRarity.Legendary,
+        _ => StampRarity.Common
     };
 
-    public float Condition { get; set; }
-    
-    public StampModel(StampType type, float condition) => (Type, Condition) = (type, condition);
+    public float Damage { get; set; }
+    public float Postmark { get; set; }
+    public Vector2 PostmarkOffset { get; set; }
+    public float PostmarkRotation { get; set; }
+    public Color PostmarkColor { get; set; }
+    public DateTime PostmarkDate { get; set; }
+    public Color BackgroundColor { get; set; }
+
+    public StampModel(StampType type, float damage, float postmark, Vector2 postmarkOffset, float postmarkRotation, Color postmarkColor, DateTime postmarkDate, Color backgroundColor) => (Type, Damage, Postmark, PostmarkOffset, PostmarkRotation, PostmarkColor, PostmarkDate, BackgroundColor) = (type, damage, postmark, postmarkOffset, postmarkRotation, postmarkColor, postmarkDate, backgroundColor);
+
+    public float GetConditionForCollection(Collection collection) => collection switch
+    {
+        Collection.Postmark => Postmark - Damage,
+        _ => 1 - Damage
+    };
 }
