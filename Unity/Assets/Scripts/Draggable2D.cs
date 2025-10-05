@@ -4,15 +4,19 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public class Draggable2D : MonoBehaviour
 {
-    private const int VelSamples = 5;
+    public static Draggable2D Current { get; private set; }
     
+    private const int VelSamples = 5;
+
     [SerializeField] private float followSmoothing = 0.5f;
     [SerializeField] private float impulseScale = 1;
     [SerializeField] private float suggestedLinearDampingIfZero = 5;
+    [SerializeField] private FolderView folderView;
     [SerializeField] private LetterView letterView;
     [SerializeField] private StampView stampView;
-    
+
     public bool Dragging => dragging;
+    public Collider2D Collider => GetComponent<Collider2D>();
 
     private Camera cam;
     private Rigidbody2D rb;
@@ -41,6 +45,7 @@ public class Draggable2D : MonoBehaviour
         if (!cam)
             return;
         dragging = true;
+        Current = this;
         sampleIdx = 0;
         for (int i = 0; i < VelSamples; i++)
             pointerDt[i] = 0;
@@ -52,6 +57,8 @@ public class Draggable2D : MonoBehaviour
         rb.gravityScale = 0;
         Vector2 bodyTarget = ComputeBodyTargetFromPointer();
         pointerBodyPos[0] = bodyTarget;
+        // if (folderView)
+            // folderView.SetOrderInLayer(GameView.Instance.NextOrder += GameView.Instance.FolderOrderStep);
         if (letterView)
             letterView.SetOrderInLayer(GameView.Instance.NextOrder += GameView.Instance.OrderStep);
         if (stampView)
@@ -76,8 +83,15 @@ public class Draggable2D : MonoBehaviour
         if (!dragging)
             return;
         dragging = false;
+        Current = null;
         rb.gravityScale = savedGravity;
         rb.constraints = RigidbodyConstraints2D.None;
+        if (stampView && DropSlot.MouseOver)
+        {
+            DropSlot.MouseOver.CollectionView.SetStamp(stampView, DropSlot.MouseOver.Index);
+            return;
+        }
+
         var v = EstimatePointerVelocity();
         var impulse = v * rb.mass * impulseScale;
         if (impulse.sqrMagnitude > 0)

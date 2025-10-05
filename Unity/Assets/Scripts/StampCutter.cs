@@ -14,6 +14,7 @@ public class StampCutter : MonoBehaviour
     [SerializeField] private Vector2 insideRectSizeLocal = new(1, 1);
     [SerializeField] private Vector2 outsideBoundsCenterLocal = Vector2.zero;
     [SerializeField] private Vector2 outsideBoundsSizeLocal = new(2, 2);
+    [SerializeField] private Vector2 perfectBoundsSizeLocal = new(2, 2);
     [SerializeField] private bool drawGizmos;
 
     private Texture2D tex;
@@ -315,6 +316,11 @@ public class StampCutter : MonoBehaviour
 
     private void GenerateInsideOutsideSpritesFromFlood(Color32[] basePixels, HashSet<int> floodVisited)
     {
+        int totalPixelsOutside = 0;
+        int wrongPixelsOutside = 0;
+        int totalPixelsInside = 0;
+        int wrongPixelsInside = 0;
+
         var insideClear = new Color32[basePixels.Length];
         var outsideClear = new Color32[basePixels.Length];
         for (int i = 0; i < basePixels.Length; i++)
@@ -325,6 +331,53 @@ public class StampCutter : MonoBehaviour
             outsideClear[i] = inFlood ? c : new Color32(c.r, c.g, c.b, 0);
         }
 
+        var inside = new RectInt(
+            Mathf.RoundToInt((insideRectCenterLocal.x - insideRectSizeLocal.x * 0.5f + spriteSizeUnits.x * 0.5f) * pixelsPerUnit),
+            Mathf.RoundToInt((insideRectCenterLocal.y - insideRectSizeLocal.y * 0.5f + spriteSizeUnits.y * 0.5f) * pixelsPerUnit),
+            Mathf.RoundToInt(insideRectSizeLocal.x * pixelsPerUnit),
+            Mathf.RoundToInt(insideRectSizeLocal.y * pixelsPerUnit)
+        );
+        var perfectRect = new RectInt(
+            Mathf.RoundToInt((-perfectBoundsSizeLocal.x * 0.5f + spriteSizeUnits.x * 0.5f) * pixelsPerUnit),
+            Mathf.RoundToInt((-perfectBoundsSizeLocal.y * 0.5f + spriteSizeUnits.y * 0.5f) * pixelsPerUnit),
+            Mathf.RoundToInt(perfectBoundsSizeLocal.x * pixelsPerUnit),
+            Mathf.RoundToInt(perfectBoundsSizeLocal.y * pixelsPerUnit)
+        );
+        var outside = new RectInt(
+            Mathf.RoundToInt((outsideBoundsCenterLocal.x - outsideBoundsSizeLocal.x * 0.5f + spriteSizeUnits.x * 0.5f) * pixelsPerUnit),
+            Mathf.RoundToInt((outsideBoundsCenterLocal.y - outsideBoundsSizeLocal.y * 0.5f + spriteSizeUnits.y * 0.5f) * pixelsPerUnit),
+            Mathf.RoundToInt(outsideBoundsSizeLocal.x * pixelsPerUnit),
+            Mathf.RoundToInt(outsideBoundsSizeLocal.y * pixelsPerUnit)
+        );
+        for (int x = 0; x < texW; x++)
+        for (int y = 0; y < texH; y++)
+        {
+            int idx = y * texW + x;
+            if (inside.Contains(new Vector2Int(x, y)))
+                continue;
+            if (perfectRect.Contains(new Vector2Int(x, y)))
+            {
+                totalPixelsInside++;
+                if (outsideClear[idx].a == 0)
+                    wrongPixelsInside++;
+            }
+
+            if (outside.Contains(new Vector2Int(x, y)))
+            {
+                totalPixelsOutside++;
+                if (outsideClear[idx].a != 0)
+                    wrongPixelsOutside++;
+            }
+        }
+        
+        float insideScore = totalPixelsInside == 0 ? 1 : 1f - (float)wrongPixelsInside / totalPixelsInside;
+        float outsideScore = totalPixelsOutside == 0 ? 1 : 1f - (float)wrongPixelsOutside / totalPixelsOutside;
+        float cutDeviation = 1 - insideScore * outsideScore * 2;
+        
+        stampView.Model.CutDeviation = Mathf.Clamp01(cutDeviation);
+        
+        Debug.Log($"Cutting results: Outside {totalPixelsOutside} pixels, {wrongPixelsOutside} wrong ({(totalPixelsOutside == 0 ? 0 : (float)wrongPixelsOutside / totalPixelsOutside * 100f):F1}%), Inside {totalPixelsInside} pixels, {wrongPixelsInside} wrong ({(totalPixelsInside == 0 ? 0 : (float)wrongPixelsInside / totalPixelsInside * 100f):F1}%)");
+
         var insideSprite = Sprite.Create(CreateTextureFrom(insideClear), new Rect(0, 0, texW, texH), new Vector2(0.5f, 0.5f), pixelsPerUnit, 0, SpriteMeshType.FullRect);
         var outsideSprite = Sprite.Create(CreateTextureFrom(outsideClear), new Rect(0, 0, texW, texH), new Vector2(0.5f, 0.5f), pixelsPerUnit, 0, SpriteMeshType.FullRect);
 
@@ -334,14 +387,14 @@ public class StampCutter : MonoBehaviour
         stampClone.LinkToModel(stampView.Model);
         GameView.Instance.AddStamp(stampClone);
 
-        letterView.HoleRenderer.color = Color.black * 0.5f;
+        letterView.HoleRenderer.color = Color.black * 0.25f;
         stampView.Mask.sprite = insideSprite;
         stampView.DateText.gameObject.SetActive(false);
         stampClone.Mask.sprite = outsideSprite;
         stampClone.Simulated = true;
-        
+
         Toolbar.Instance.SetTool(Toolbar.Tool.Hand);
-            
+
         Destroy(this);
     }
 
@@ -367,6 +420,8 @@ public class StampCutter : MonoBehaviour
         DrawRectGizmo(LocalRect(outsideBoundsCenterLocal, outsideBoundsSizeLocal));
         Gizmos.color = Color.cyan;
         DrawRectGizmo(LocalRect(insideRectCenterLocal, insideRectSizeLocal));
+        Gizmos.color = Color.orange;
+        DrawRectGizmo(LocalRect(Vector2.zero, perfectBoundsSizeLocal));
     }
 
     private void DrawRectGizmo(Rect rLocal)
@@ -385,7 +440,7 @@ public class StampCutter : MonoBehaviour
     {
         mouseOver = true;
     }
-    
+
     private void OnMouseExit()
     {
         mouseOver = false;

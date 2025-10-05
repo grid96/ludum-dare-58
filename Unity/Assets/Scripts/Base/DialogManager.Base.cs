@@ -60,7 +60,7 @@ public partial class DialogManager : MonoBehaviour
 
     private void PlayBeep()
     {
-        AudioManager.instance.Play(beepSoundName, 0.5f, Random.Range(beepMinPitch, beepMaxPitch));
+        // AudioManager.instance.Play(beepSoundName, 0.5f, Random.Range(beepMinPitch, beepMaxPitch));
     }
 
     private void Awake()
@@ -76,6 +76,7 @@ public partial class DialogManager : MonoBehaviour
     {
         if (shown == isShown)
             return;
+        messageText.text = "";
         isShown = shown;
         positionTween?.Kill(true);
         var tcs = new UniTaskCompletionSource<bool>();

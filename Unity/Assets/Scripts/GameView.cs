@@ -13,7 +13,8 @@ public class GameView : MonoBehaviour
 
     public GameModel Model { get; private set; }
     public int NextOrder { get; set; }
-    public int OrderStep => Enum.GetValues(typeof(LetterView.SortingOrder)).Length + Enum.GetValues(typeof(StampView.SortingOrder)).Length;
+    public int OrderStep => Enum.GetValues(typeof(LetterView.SortingOrder)).Length + Enum.GetValues(typeof(StampView.SortingOrder)).Length + 3;
+    public int FolderOrderStep => Enum.GetValues(typeof(FolderView.SortingOrder)).Length + Enum.GetValues(typeof(CollectionView.SortingOrder)).Length + Enum.GetValues(typeof(StampView.SortingOrder)).Length + 3;
 
     private readonly List<LetterView> letterViews = new();
     private readonly List<StampView> stampViews = new();
@@ -24,7 +25,8 @@ public class GameView : MonoBehaviour
     private void Start()
     {
         LinkToModel(new GameModel());
-        Postman.Instance.AddLetter();
+        FolderView.Instance.LinkToModel(Model.Folder);
+        Postman.Instance.AddLetter(false);
     }
 
     private void Update()
@@ -44,6 +46,24 @@ public class GameView : MonoBehaviour
                 stampViews.Remove(view);
                 Destroy(view.gameObject);
             }
+
+        while (letterViews.Count + stampViews.Count > 50)
+        {
+            var letterView = letterViews.OrderBy(v => v.OrderInLayer).FirstOrDefault();
+            var stampView = stampViews.OrderBy(v => v.OrderInLayer).FirstOrDefault();
+            if (letterView != null && (stampView == null || letterView.OrderInLayer < stampView.OrderInLayer))
+            {
+                Model.Letters.Remove(letterView.Model);
+                letterViews.Remove(letterView);
+                Destroy(letterView.gameObject);
+            }
+            else if (stampView != null)
+            {
+                Model.Stamps.Remove(stampView.Model);
+                stampViews.Remove(stampView);
+                Destroy(stampView.gameObject);
+            }
+        }
     }
 
     public void LinkToModel(GameModel model)
@@ -84,5 +104,11 @@ public class GameView : MonoBehaviour
         stamp.transform.SetParent(letterContainer);
         stamp.SetOrderInLayer(NextOrder += OrderStep);
         stampViews.Add(stamp);
+    }
+
+    public void RemoveStamp(StampView stamp)
+    {
+        Model.Stamps.Remove(stamp.Model);
+        stampViews.Remove(stamp);
     }
 }

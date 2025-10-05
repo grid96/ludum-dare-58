@@ -114,7 +114,7 @@ public class StampView : MonoBehaviour
         if (Model.Postmark > 0)
             Model.Postmark = Mathf.Clamp01(Model.Postmark - Input.mousePositionDelta.magnitude * 0.001f);
         else
-            Model.Damage = Mathf.Clamp01(Model.Damage + Input.mousePositionDelta.magnitude * 0.001f);
+            Model.Damage = Mathf.Clamp01(Model.Damage + Input.mousePositionDelta.magnitude * 0.002f);
         UpdateView();
     }
 
