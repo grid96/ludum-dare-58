@@ -64,6 +64,16 @@ public class GameView : MonoBehaviour
                 Destroy(stampView.gameObject);
             }
         }
+
+        if (NextOrder > 11000)
+        {
+            FolderView.Instance.SetOrderInLayer(FolderView.Instance.OrderInLayer - 10000);
+            foreach (var view in letterViews)
+                view.SetOrderInLayer(view.OrderInLayer - 10000);
+            foreach (var view in stampViews)
+                view.SetOrderInLayer(view.OrderInLayer - 10000);
+            NextOrder -= 10000;
+        }
     }
 
     public void LinkToModel(GameModel model)
