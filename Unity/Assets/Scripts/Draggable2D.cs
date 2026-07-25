@@ -1,4 +1,7 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(Collider2D))]
@@ -40,7 +43,7 @@ public class Draggable2D : MonoBehaviour
 
     private void OnMouseDown()
     {
-        if (Toolbar.Instance.CurrentTool != Toolbar.Tool.Hand || Toolbar.Instance.MouseOver)
+        if (Toolbar.Instance.CurrentTool != Toolbar.Tool.Hand || Toolbar.IsPointerCurrentlyOverUI())
             return;
         if (!cam)
             return;

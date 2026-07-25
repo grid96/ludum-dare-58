@@ -109,7 +109,7 @@ public class StampView : MonoBehaviour
     {
         foreach (var r in GetRenderers(SortingOrder.Cut))
             r.gameObject.SetActive(Toolbar.Instance.CurrentTool == Tool.Knife && !Simulated);
-        if (!Input.GetMouseButton(0) || !mouseOver || Toolbar.Instance.CurrentTool != Tool.Sponge || Toolbar.Instance.MouseOver)
+        if (!Input.GetMouseButton(0) || !mouseOver || Toolbar.Instance.CurrentTool != Tool.Sponge || Toolbar.IsPointerCurrentlyOverUI())
             return;
         if (Model.Postmark > 0)
             Model.Postmark = Mathf.Clamp01(Model.Postmark - Input.mousePositionDelta.magnitude * 0.001f);

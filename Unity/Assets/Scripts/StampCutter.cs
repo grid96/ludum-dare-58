@@ -67,7 +67,7 @@ public class StampCutter : MonoBehaviour
         var outside = LocalRect(outsideBoundsCenterLocal, outsideBoundsSizeLocal);
         var clampedLocal = new Vector2(Mathf.Clamp(local.x, outside.xMin + r, outside.xMax - r), Mathf.Clamp(local.y, outside.yMin + r, outside.yMax - r));
 
-        if (Input.GetMouseButtonDown(0) && Toolbar.Instance.CurrentTool == Toolbar.Tool.Knife && !Toolbar.Instance.MouseOver && mouseOver)
+        if (Input.GetMouseButtonDown(0) && Toolbar.Instance.CurrentTool == Toolbar.Tool.Knife && !Toolbar.IsPointerCurrentlyOverUI() && mouseOver)
         {
             isDrawing = true;
             lastLocal = clampedLocal;

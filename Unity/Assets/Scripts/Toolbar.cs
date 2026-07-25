@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class Toolbar : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class Toolbar : MonoBehaviour
 {
     public enum Tool
     {
@@ -22,8 +23,7 @@ public class Toolbar : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     [SerializeField] private Texture2D knife;
 
     public Tool CurrentTool { get; private set; }
-    public bool MouseOver { get; private set; }
-    
+
     private Tool? lastTool;
 
     private void Awake() => Instance = this;
@@ -31,7 +31,7 @@ public class Toolbar : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     private void Update()
     {
         CurrentTool = (Tool)toggles.ToList().FindIndex(t => t.isOn);
-        if (lastTool == CurrentTool && !Input.GetMouseButtonDown(0) && !Input.GetMouseButtonUp(0)) 
+        if (lastTool == CurrentTool && !Input.GetMouseButtonDown(0) && !Input.GetMouseButtonUp(0))
             return;
         Cursor.SetCursor(CurrentTool switch
         {
@@ -47,12 +47,20 @@ public class Toolbar : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
         }, CursorMode.ForceSoftware);
         lastTool = CurrentTool;
     }
-    
+
     public void SetTool(Tool tool)
     {
         toggles[(int)tool].isOn = true;
     }
     
-    public void OnPointerEnter(PointerEventData eventData) => MouseOver = true;
-    public void OnPointerExit(PointerEventData eventData) => MouseOver = false;
+    private static readonly List<RaycastResult> uiHits = new();
+
+    public static bool IsPointerCurrentlyOverUI()
+    {
+        if (!EventSystem.current)
+            return false;
+        uiHits.Clear();
+        EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = Input.mousePosition }, uiHits);
+        return uiHits.Exists(hit => hit.module is GraphicRaycaster);
+    }
 }
